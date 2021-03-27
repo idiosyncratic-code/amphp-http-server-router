@@ -6,14 +6,14 @@ namespace Idiosyncratic\Amp\Http\Server\Router;
 
 use Amp\Http\Server\Driver\Client;
 use Amp\Http\Server\Request;
-use Amp\Http\Server\Response;
 use Amp\Http\Server\RequestHandler\CallableRequestHandler;
+use Amp\Http\Server\Response;
 use Amp\Http\Status;
 use Amp\Promise;
 use Error;
 use League\Uri;
 use PHPUnit\Framework\TestCase;
-use Psr\Container\NotFoundExceptionInterface;
+use Psr\Container\ContainerInterface;
 
 class RouterTest extends TestCase
 {
@@ -21,7 +21,7 @@ class RouterTest extends TestCase
     {
         $router = new Router();
 
-        $router->map('GET', '/hello', new CallableRequestHandler(function () {
+        $router->map('GET', '/hello', new CallableRequestHandler(static function () {
             return new Response(Status::OK, ['content-type' => 'text/plain'], 'Hello, world!');
         }));
 
@@ -29,8 +29,8 @@ class RouterTest extends TestCase
 
         $request = new Request(
             $this->createMock(Client::class),
-            "GET",
-            Uri\Http::createFromString("/hello")
+            'GET',
+            Uri\Http::createFromString('/hello')
         );
 
         $response = Promise\wait($router->handleRequest($request));
@@ -48,8 +48,8 @@ class RouterTest extends TestCase
 
         $request = new Request(
             $this->createMock(Client::class),
-            "GET",
-            Uri\Http::createFromString("/hello")
+            'GET',
+            Uri\Http::createFromString('/hello')
         );
 
         $response = Promise\wait($router->handleRequest($request));
@@ -63,7 +63,7 @@ class RouterTest extends TestCase
     {
         $router = new Router();
 
-        $router->map('GET', '/hello', new CallableRequestHandler(function () {
+        $router->map('GET', '/hello', new CallableRequestHandler(static function () {
             return new Response(Status::OK, ['content-type' => 'text/plain'], 'Hello, world!');
         }));
 
@@ -71,8 +71,8 @@ class RouterTest extends TestCase
 
         $request = new Request(
             $this->createMock(Client::class),
-            "DELETE",
-            Uri\Http::createFromString("/hello")
+            'DELETE',
+            Uri\Http::createFromString('/hello')
         );
 
         $response = Promise\wait($router->handleRequest($request));
@@ -84,6 +84,15 @@ class RouterTest extends TestCase
         $this->assertEquals('GET', $response->getHeader('Allow'));
     }
 
+    public function testInvalidResponseHandlerResponse() : void
+    {
+        $container = $this->createMock(ContainerInterface::class);
+
+        $this->markTestIncomplete(
+            'This test has not been implemented yet.'
+        );
+    }
+
     public function testMappingRouteAfterCompilationFails() : void
     {
         $router = new Router();
@@ -92,7 +101,7 @@ class RouterTest extends TestCase
 
         $this->expectException(Error::class);
 
-        $router->map('GET', '/hello', new CallableRequestHandler(function () {
+        $router->map('GET', '/hello', new CallableRequestHandler(static function () {
             return new Response(Status::OK, ['content-type' => 'text/plain'], 'Hello, world!');
         }));
     }
@@ -103,7 +112,7 @@ class RouterTest extends TestCase
 
         $this->expectException(Error::class);
 
-        $router->map('', '/hello', new CallableRequestHandler(function () {
+        $router->map('', '/hello', new CallableRequestHandler(static function () {
             return new Response(Status::OK, ['content-type' => 'text/plain'], 'Hello, world!');
         }));
     }

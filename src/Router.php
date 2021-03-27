@@ -56,6 +56,8 @@ final class Router implements RequestHandler
 
         $dispatched = $this->dispatcher->dispatch($method, $path);
 
+        // Ignore the next line because phpcs thinks the parentheses are "superfluous"
+        // phpcs:ignore
         return match ($dispatched[0]) {
             Dispatcher::FOUND => $this->makeFoundResponse($request, $dispatched[1], $dispatched[2]),
             Dispatcher::METHOD_NOT_ALLOWED => $this->makeMethodNotAllowedResponse($request, $dispatched[1]),
