@@ -30,6 +30,7 @@
   "require": {
     "php": ">=8.0",
     "amphp/amp": "^2.5",
+    "amphp/http": "^1.6",
     "amphp/http-server": "^2.1",
     "league/uri": "^6.4",
     "nikic/fast-route": "^1.3",
