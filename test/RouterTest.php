@@ -19,7 +19,9 @@ class RouterTest extends TestCase
 {
     public function testSuccessfulResponse() : void
     {
-        $router = new Router();
+        $container = $this->createMock(ContainerInterface::class);
+
+        $router = new Router($container);
 
         $router->map('GET', '/hello', new CallableRequestHandler(static function () {
             return new Response(Status::OK, ['content-type' => 'text/plain'], 'Hello, world!');
@@ -42,7 +44,9 @@ class RouterTest extends TestCase
 
     public function testRouteNotFoundResponse() : void
     {
-        $router = new Router();
+        $container = $this->createMock(ContainerInterface::class);
+
+        $router = new Router($container);
 
         $router->compileRoutes();
 
@@ -61,7 +65,9 @@ class RouterTest extends TestCase
 
     public function testMethodNotAllowedResponse() : void
     {
-        $router = new Router();
+        $container = $this->createMock(ContainerInterface::class);
+
+        $router = new Router($container);
 
         $router->map('GET', '/hello', new CallableRequestHandler(static function () {
             return new Response(Status::OK, ['content-type' => 'text/plain'], 'Hello, world!');
@@ -95,7 +101,9 @@ class RouterTest extends TestCase
 
     public function testMappingRouteAfterCompilationFails() : void
     {
-        $router = new Router();
+        $container = $this->createMock(ContainerInterface::class);
+
+        $router = new Router($container);
 
         $router->compileRoutes();
 
@@ -108,7 +116,9 @@ class RouterTest extends TestCase
 
     public function testMappingRouteWithEmptyStringFails() : void
     {
-        $router = new Router();
+        $container = $this->createMock(ContainerInterface::class);
+
+        $router = new Router($container);
 
         $this->expectException(Error::class);
 

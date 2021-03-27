@@ -13,6 +13,7 @@ use Amp\Success;
 use Error;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
+use Psr\Container\ContainerInterface;
 
 use function FastRoute\simpleDispatcher;
 use function implode;
@@ -22,12 +23,20 @@ use function sprintf;
 
 final class Router implements RequestHandler
 {
-    /** @var array<mixed> */
-    private array $routes = [];
+    private ContainerInterface $container;
 
     private Dispatcher $dispatcher;
 
+    /** @var array<mixed> */
+    private array $routes = [];
+
     private bool $compiled = false;
+
+    public function __construct(
+        ContainerInterface $container
+    ) {
+        $this->container = $container;
+    }
 
     public function map(
         string $method,
@@ -75,11 +84,16 @@ final class Router implements RequestHandler
         string | RequestHandler $requestHandler,
         array $routeArgs,
     ) : Promise {
-        $request->setAttribute(self::class, $routeArgs);
 
         if (is_string($requestHandler)) {
-            throw new Error('String Request Handlers are not implemented yet');
+            return $this->makeFoundResponse(
+                $request,
+                $this->container->get($requestHandler),
+                $routeArgs
+            );
         }
+
+        $request->setAttribute(self::class, $routeArgs);
 
         return $requestHandler->handleRequest($request);
     }
