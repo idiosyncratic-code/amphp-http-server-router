@@ -1,0 +1,46 @@
+{
+  "name": "idiosyncratic/amp-http-server-router",
+  "description": "Router for Amp HTTP Server",
+  "type": "application",
+  "license": "ISC",
+  "authors": [
+    {
+      "name": "Jason Silkey",
+      "email": "jason@jasonsilkey.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Idiosyncratic\\Amp\\Http\\Server\\Router\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Idiosyncratic\\Amp\\Http\\Server\\Router\\": "test"
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "config": {
+    "preferred-install": "dist",
+    "sort-packages": true,
+    "optimize-autoloader": true,
+    "discard-changes": true
+  },
+  "require": {
+    "php": ">=8.0",
+    "amphp/amp": "^2.5",
+    "amphp/http-server": "^2.1",
+    "league/uri": "^6.4",
+    "nikic/fast-route": "^1.3",
+    "psr/container": "^2.0",
+    "psr/log": "^1.1"
+  },
+  "require-dev": {
+    "doctrine/coding-standard": "^8.2",
+    "php-parallel-lint/php-console-highlighter": "^0.5.0",
+    "php-parallel-lint/php-parallel-lint": "^1.2",
+    "phpstan/phpstan": "^0.12.81",
+    "phpunit/phpunit": "^9.5"
+  }
+}
