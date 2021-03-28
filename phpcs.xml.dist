@@ -16,5 +16,6 @@
     <!-- Import Doctrine coding standard (base) -->
     <rule ref="Doctrine">
         <exclude name="SlevomatCodingStandard.TypeHints.ReturnTypeHintSpacing.WhitespaceBeforeColon" />
+        <exclude name="Generic.Formatting.MultipleStatementAlignment.NotSame" />
     </rule>
 </ruleset>
