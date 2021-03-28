@@ -13,9 +13,11 @@ class CachingDispatcherTest extends TestCase
     {
         $mockDispatcher = $this->createMock(Dispatcher::class);
 
-        $mockDispatcher->expects($this->once())
+        $mockDispatcher->expects($this->exactly(1))
              ->method('dispatch')
-             ->will($this->returnValue(new DispatchResult($this->createMock(RequestHandler::class), [])));
+             ->will($this->returnValueMap([
+                 ['GET', '/hello', new DispatchResult($this->createMock(RequestHandler::class), [])],
+             ]));
 
         $mockDispatcher->expects($this->once())
              ->method('compiled')
@@ -33,5 +35,38 @@ class CachingDispatcherTest extends TestCase
         $dispatcher->compile([]);
 
         $this->assertTrue($dispatcher->compiled());
+    }
+
+    public function testCacheMaximumSizeIsEnforced() : void
+    {
+        $mockDispatcher = $this->createMock(Dispatcher::class);
+
+        $result = new DispatchResult($this->createMock(RequestHandler::class), []);
+
+        $mockDispatcher->expects($this->exactly(4))
+             ->method('dispatch')
+             ->will($this->returnValueMap([
+                 ['GET', '/hello', $result],
+                 ['GET', '/goodbye', $result],
+             ]));
+
+        $mockDispatcher->expects($this->once())
+             ->method('compile');
+
+        $dispatcher = new CachingDispatcher($mockDispatcher, 1);
+
+        $dispatcher->compile([]);
+
+        $dispatcher->dispatch('GET', '/hello');
+
+        $dispatcher->dispatch('GET', '/hello');
+
+        $dispatcher->dispatch('GET', '/goodbye');
+
+        $dispatcher->dispatch('GET', '/goodbye');
+
+        $dispatcher->dispatch('GET', '/hello');
+
+        $dispatcher->dispatch('GET', '/goodbye');
     }
 }
