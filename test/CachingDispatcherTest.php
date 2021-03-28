@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Idiosyncratic\Amp\Http\Server\Router;
 
-use Amp\Http\Server\RequestHandler;
 use Amp\Http\Server\RequestHandler\CallableRequestHandler;
 use Amp\Http\Server\Response;
 use Amp\Http\Status;
@@ -20,11 +19,11 @@ class CachingDispatcherTest extends TestCase
              ->method('dispatch')
              ->will($this->returnValue(
                  [
-                    'status' => Dispatcher::FOUND,
-                    'handler' => new CallableRequestHandler(static function () {
+                     'status' => Dispatcher::FOUND,
+                     'handler' => new CallableRequestHandler(static function () {
                         return new Response(Status::OK, ['content-type' => 'text/plain'], 'Hello, world!');
-                    }),
-                    'routeArgs' => [],
+                     }),
+                     'routeArgs' => [],
                  ]
              ));
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Idiosyncratic\Amp\Http\Server\Router;
 
+use function sprintf;
+
 final class CachingDispatcher implements Dispatcher
 {
     private Dispatcher $dispatcher;
@@ -21,12 +23,11 @@ final class CachingDispatcher implements Dispatcher
      */
     public function dispatch(string $method, string $path) : array
     {
-        $key = "{$method}--{$path}";
+        $key = sprintf('%s--%s', $method, $path);
 
         if (isset($this->cache[$key])) {
             return $this->cache[$key];
         }
-
 
         return $this->cache[$key] = $this->dispatcher->dispatch($method, $path);
     }

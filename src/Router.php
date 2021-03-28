@@ -12,7 +12,6 @@ use Amp\Http\Status;
 use Amp\Promise;
 use Amp\Success;
 use Error;
-use FastRoute\Dispatcher as FastRoute;
 
 use function implode;
 use function ltrim;
