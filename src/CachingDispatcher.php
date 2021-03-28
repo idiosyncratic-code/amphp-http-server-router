@@ -18,10 +18,7 @@ final class CachingDispatcher implements Dispatcher
         $this->dispatcher = $dispatcher;
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function dispatch(string $method, string $path) : array
+    public function dispatch(string $method, string $path) : DispatchResult
     {
         $key = sprintf('%s--%s', $method, $path);
 

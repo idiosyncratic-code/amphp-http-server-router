@@ -9,6 +9,8 @@ use Amp\Http\Server\RequestHandler;
 use Error;
 use FastRoute\Dispatcher as FastRoute;
 use FastRoute\RouteCollector;
+use Idiosyncratic\Amp\Http\Server\Router\Exception\MethodNotAllowed;
+use Idiosyncratic\Amp\Http\Server\Router\Exception\NotFound;
 use Psr\Container\ContainerInterface;
 
 use function array_map;
@@ -25,30 +27,24 @@ final class FastRouteDispatcher implements Dispatcher
 
     private bool $compiled = false;
 
-    public function __construct(
-        ContainerInterface $container,
-    ) {
+    public function __construct(ContainerInterface $container)
+    {
         $this->container = $container;
     }
 
     /**
      * @inheritdoc
      */
-    public function dispatch(string $method, string $path) : array
+    public function dispatch(string $method, string $path) : DispatchResult
     {
         $dispatched = $this->dispatcher->dispatch($method, $path);
 
         if ($dispatched[0] === Dispatcher::METHOD_NOT_ALLOWED) {
-            return [
-                'status' => $dispatched[0],
-                'allowedMethods' => $dispatched[1],
-            ];
+            throw new MethodNotAllowed($dispatched[1]);
         }
 
         if ($dispatched[0] === Dispatcher::NOT_FOUND) {
-            return [
-                'status' => $dispatched[0],
-            ];
+            throw new NotFound();
         }
 
         $requestHandler = is_string($dispatched[1]['handler']) ?
@@ -59,11 +55,10 @@ final class FastRouteDispatcher implements Dispatcher
             $requestHandler = $this->makeMiddlewareRequestHandler($requestHandler, $dispatched[1]['middleware']);
         }
 
-        return [
-            'status' => Dispatcher::FOUND,
-            'handler' => $requestHandler,
-            'routeArgs' => $dispatched[2],
-        ];
+        return new DispatchResult(
+            $requestHandler,
+            $dispatched[2],
+        );
     }
 
     /**

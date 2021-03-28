@@ -12,6 +12,8 @@ use Amp\Http\Status;
 use Amp\Promise;
 use Amp\Success;
 use Error;
+use Idiosyncratic\Amp\Http\Server\Router\Exception\MethodNotAllowed;
+use Idiosyncratic\Amp\Http\Server\Router\Exception\NotFound;
 
 use function implode;
 use function ltrim;
@@ -50,7 +52,18 @@ final class Router implements RequestHandler
 
     public function handleRequest(Request $request) : Promise
     {
-        $dispatched = $this->dispatcher->dispatch($request->getMethod(), $request->getUri()->getPath());
+        try {
+            return $this->dispatcher
+                   ->dispatch($request->getMethod(), $request->getUri()->getPath())
+                   ->handleRequest($request);
+        } catch (MethodNotAllowed $t) {
+            return $this->makeMethodNotAllowedResponse(
+                $request,
+                $t->getAllowedMethods(),
+            );
+        } catch (NotFound $t) {
+            return $this->makeNotFoundResponse($request);
+        }
 
         // Ignore the next line because phpcs currently thinks the parentheses are "superfluous"
         // phpcs:ignore
@@ -72,21 +85,6 @@ final class Router implements RequestHandler
     public function compileRoutes() : void
     {
         $this->dispatcher->compile($this->routes);
-    }
-
-    /**
-     * @param array<mixed> $routeArgs
-     *
-     * @return Promise<Response>
-     */
-    private function makeFoundResponse(
-        Request $request,
-        RequestHandler $requestHandler,
-        array $routeArgs,
-    ) : Promise {
-        $request->setAttribute(self::class, $routeArgs);
-
-        return $requestHandler->handleRequest($request);
     }
 
     /**

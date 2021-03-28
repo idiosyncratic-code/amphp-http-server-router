@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Idiosyncratic\Amp\Http\Server\Router;
 
+use Amp\Http\Server\RequestHandler;
+
 interface Dispatcher
 {
     public const NOT_FOUND = 0;
@@ -13,7 +15,7 @@ interface Dispatcher
     /**
      * @return array<mixed>
      */
-    public function dispatch(string $method, string $path) : array;
+    public function dispatch(string $method, string $path) : RequestHandler;
 
     /**
      * @param array<mixed> $routes
