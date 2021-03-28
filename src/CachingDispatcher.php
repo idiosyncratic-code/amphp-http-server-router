@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Idiosyncratic\Amp\Http\Server\Router;
 
+use Amp\Http\Server\HttpServer;
+use Amp\Promise;
+
+use function array_shift;
+use function count;
 use function sprintf;
 
 final class CachingDispatcher implements Dispatcher
@@ -46,6 +51,22 @@ final class CachingDispatcher implements Dispatcher
         return $this->dispatcher->compiled();
     }
 
+    /**
+     * @return Promise<mixed>
+     */
+    public function onStart(HttpServer $server) : Promise
+    {
+        return $this->dispatcher->onStart($server);
+    }
+
+    /**
+     * @return Promise<mixed>
+     */
+    public function onStop(HttpServer $server) : Promise
+    {
+        return $this->dispatcher->onStop($server);
+    }
+
     private function has(string $key) : bool
     {
         return isset($this->cache[$key]);
@@ -58,9 +79,11 @@ final class CachingDispatcher implements Dispatcher
 
     private function remove(string $key) : void
     {
-        if ($this->has($key)) {
-            unset($this->cache[$key]);
+        if ($this->has($key) === false) {
+            return;
         }
+
+        unset($this->cache[$key]);
     }
 
     private function put(string $key, DispatchResult $result) : DispatchResult

@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Idiosyncratic\Amp\Http\Server\Router;
 
+use Amp\Http\Server\HttpServer;
 use Amp\Http\Server\Middleware;
 use Amp\Http\Server\RequestHandler;
+use Amp\Promise;
+use Amp\Success;
 use Error;
 use FastRoute\Dispatcher as FastRoute;
 use FastRoute\RouteCollector;
@@ -81,6 +84,22 @@ final class FastRouteDispatcher implements Dispatcher
     public function compiled() : bool
     {
         return $this->compiled;
+    }
+
+    /**
+     * @return Promise<mixed>
+     */
+    public function onStart(HttpServer $server) : Promise
+    {
+        return new Success();
+    }
+
+    /**
+     * @return Promise<mixed>
+     */
+    public function onStop(HttpServer $server) : Promise
+    {
+        return new Success();
     }
 
     /**

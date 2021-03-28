@@ -19,6 +19,8 @@ use Psr\Container\ContainerInterface;
 
 class RouterTest extends TestCase
 {
+    use MocksHttpServer;
+
     public function testFoundResponseWithCallableRequestHandler() : void
     {
         $container = $this->createMock(ContainerInterface::class);
@@ -33,7 +35,7 @@ class RouterTest extends TestCase
             }),
         );
 
-        $router->compileRoutes();
+        Promise\wait($router->onStart($this->mockServer()));
 
         $request = new Request(
             $this->createMock(Client::class),
@@ -60,7 +62,7 @@ class RouterTest extends TestCase
 
         $router->map('GET', '/hello/{name}', TestResponseHandler::class);
 
-        $router->compileRoutes();
+        Promise\wait($router->onStart($this->mockServer()));
 
         $request = new Request(
             $this->createMock(Client::class),
@@ -106,7 +108,7 @@ class RouterTest extends TestCase
             CompressionMiddleware::class
         );
 
-        $router->compileRoutes();
+        Promise\wait($router->onStart($this->mockServer()));
 
         $request = new Request(
             $this->createMock(Client::class),
@@ -131,7 +133,7 @@ class RouterTest extends TestCase
 
         $router = new Router(new FastRouteDispatcher($container));
 
-        $router->compileRoutes();
+        Promise\wait($router->onStart($this->mockServer()));
 
         $request = new Request(
             $this->createMock(Client::class),
@@ -156,7 +158,7 @@ class RouterTest extends TestCase
             return new Response(Status::OK, ['content-type' => 'text/plain'], 'Hello, world!');
         }));
 
-        $router->compileRoutes();
+        Promise\wait($router->onStart($this->mockServer()));
 
         $request = new Request(
             $this->createMock(Client::class),
@@ -185,7 +187,7 @@ class RouterTest extends TestCase
 
         $router->map('GET', '/hello/{name}', 'InvalidRequestHandler');
 
-        $router->compileRoutes();
+        Promise\wait($router->onStart($this->mockServer()));
 
         $request = new Request(
             $this->createMock(Client::class),
@@ -204,7 +206,7 @@ class RouterTest extends TestCase
 
         $router = new Router(new FastRouteDispatcher($container));
 
-        $router->compileRoutes();
+        Promise\wait($router->onStart($this->mockServer()));
 
         $this->expectException(Error::class);
 
