@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Idiosyncratic\Amp\Http\Server\Router;
 
-use Amp\Http\Server\RequestHandler;
-
 interface Dispatcher
 {
     public function dispatch(string $method, string $path) : DispatchResult;
