@@ -23,7 +23,7 @@ class RouterTest extends TestCase
     {
         $container = $this->createMock(ContainerInterface::class);
 
-        $router = new Router($container);
+        $router = new Router(new FastRouteDispatcher($container));
 
         $router->map(
             'GET',
@@ -56,7 +56,7 @@ class RouterTest extends TestCase
              ->method('get')
              ->will($this->returnValue(new TestResponseHandler()));
 
-        $router = new Router($container);
+        $router = new Router(new FastRouteDispatcher($container));
 
         $router->map('GET', '/hello/{name}', TestResponseHandler::class);
 
@@ -83,7 +83,7 @@ class RouterTest extends TestCase
              ->method('get')
              ->will($this->returnValue(new CompressionMiddleware()));
 
-        $router = new Router($container);
+        $router = new Router(new FastRouteDispatcher($container));
 
         $router->map(
             'GET',
@@ -129,7 +129,7 @@ class RouterTest extends TestCase
     {
         $container = $this->createMock(ContainerInterface::class);
 
-        $router = new Router($container);
+        $router = new Router(new FastRouteDispatcher($container));
 
         $router->compileRoutes();
 
@@ -150,7 +150,7 @@ class RouterTest extends TestCase
     {
         $container = $this->createMock(ContainerInterface::class);
 
-        $router = new Router($container);
+        $router = new Router(new FastRouteDispatcher($container));
 
         $router->map('GET', '/hello', new CallableRequestHandler(static function () {
             return new Response(Status::OK, ['content-type' => 'text/plain'], 'Hello, world!');
@@ -181,7 +181,7 @@ class RouterTest extends TestCase
              ->method('get')
              ->will($this->throwException(new ContainerEntryNotFound()));
 
-        $router = new Router($container);
+        $router = new Router(new FastRouteDispatcher($container));
 
         $router->map('GET', '/hello/{name}', 'InvalidRequestHandler');
 
@@ -202,7 +202,7 @@ class RouterTest extends TestCase
     {
         $container = $this->createMock(ContainerInterface::class);
 
-        $router = new Router($container);
+        $router = new Router(new FastRouteDispatcher($container));
 
         $router->compileRoutes();
 
@@ -217,7 +217,7 @@ class RouterTest extends TestCase
     {
         $container = $this->createMock(ContainerInterface::class);
 
-        $router = new Router($container);
+        $router = new Router(new FastRouteDispatcher($container));
 
         $this->expectException(Error::class);
 

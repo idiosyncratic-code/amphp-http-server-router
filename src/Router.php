@@ -12,33 +12,22 @@ use Amp\Http\Status;
 use Amp\Promise;
 use Amp\Success;
 use Error;
-use FastRoute\Dispatcher;
-use FastRoute\RouteCollector;
-use Psr\Container\ContainerInterface;
+use FastRoute\Dispatcher as FastRoute;
 
-use function array_map;
-use function count;
-use function FastRoute\simpleDispatcher;
 use function implode;
-use function is_string;
 use function ltrim;
-use function sprintf;
 
 final class Router implements RequestHandler
 {
-    private ContainerInterface $container;
-
     private Dispatcher $dispatcher;
 
     /** @var array<mixed> */
     private array $routes = [];
 
-    private bool $compiled = false;
-
     public function __construct(
-        ContainerInterface $container,
+        Dispatcher $dispatcher,
     ) {
-        $this->container = $container;
+        $this->dispatcher = $dispatcher;
     }
 
     public function map(
@@ -47,7 +36,7 @@ final class Router implements RequestHandler
         string | RequestHandler $requestHandler,
         string | Middleware ...$middlewares
     ) : void {
-        if ($this->compiled === true) {
+        if ($this->dispatcher->compiled() === true) {
             throw new Error('Routes already compiled');
         }
 
@@ -62,56 +51,41 @@ final class Router implements RequestHandler
 
     public function handleRequest(Request $request) : Promise
     {
-        $method = $request->getMethod();
-
-        $path = $request->getUri()->getPath();
-
-        $dispatched = $this->dispatcher->dispatch($method, $path);
+        $dispatched = $this->dispatcher->dispatch($request->getMethod(), $request->getUri()->getPath());
 
         // Ignore the next line because phpcs currently thinks the parentheses are "superfluous"
         // phpcs:ignore
-        return match ($dispatched[0]) {
-            Dispatcher::FOUND => $this->makeFoundResponse(
+        return match ($dispatched['status']) {
+            FastRoute::FOUND => $this->makeFoundResponse(
                 $request,
-                $dispatched[1]['handler'],
-                $dispatched[1]['middleware'],
-                $dispatched[2],
+                $dispatched['handler'],
+                $dispatched['routeArgs'],
             ),
-            Dispatcher::METHOD_NOT_ALLOWED => $this->makeMethodNotAllowedResponse(
+            FastRoute::METHOD_NOT_ALLOWED => $this->makeMethodNotAllowedResponse(
                 $request,
-                $dispatched[1],
+                $dispatched['allowedMethods'],
             ),
             // phpcs:ignore
             default => $this->makeNotFoundResponse($request),
         };
     }
 
+    public function compileRoutes() : void
+    {
+        $this->dispatcher->compile($this->routes);
+    }
+
     /**
-     * @param array<string | Middleware> $middleware
-     * @param array<mixed>               $routeArgs
+     * @param array<mixed> $routeArgs
      *
      * @return Promise<Response>
      */
     private function makeFoundResponse(
         Request $request,
-        string | RequestHandler $requestHandler,
-        array $middleware,
+        RequestHandler $requestHandler,
         array $routeArgs,
     ) : Promise {
-        if (is_string($requestHandler)) {
-            return $this->makeFoundResponse(
-                $request,
-                $this->container->get($requestHandler),
-                $middleware,
-                $routeArgs,
-            );
-        }
-
         $request->setAttribute(self::class, $routeArgs);
-
-        if (count($middleware) > 0) {
-            return $this->makeMiddlewareRequestHandler($requestHandler, $middleware)->handleRequest($request);
-        }
 
         return $requestHandler->handleRequest($request);
     }
@@ -138,34 +112,5 @@ final class Router implements RequestHandler
         $response->setHeader('allow', implode(', ', $methods));
 
         return new Success($response);
-    }
-
-    public function compileRoutes() : void
-    {
-        $this->dispatcher = simpleDispatcher(function (RouteCollector $collector): void {
-            foreach ($this->routes as [$method, $uri, $requestHandler]) {
-                $uri = sprintf('/%s', $uri);
-
-                $collector->addRoute($method, $uri, $requestHandler);
-            }
-        });
-
-        $this->compiled = true;
-    }
-
-    /**
-     * @param array<string | Middleware> $middleware
-     */
-    private function makeMiddlewareRequestHandler(
-        RequestHandler $requestHandler,
-        array $middleware,
-    ) : RequestHandler {
-        $middleware = array_map(function ($item) {
-            return $item instanceof Middleware ?
-                $item :
-                $this->container->get($item);
-        }, $middleware);
-
-        return new MiddlewareRequestHandler($requestHandler, ...$middleware);
     }
 }

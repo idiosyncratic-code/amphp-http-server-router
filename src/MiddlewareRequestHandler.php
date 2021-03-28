@@ -9,6 +9,8 @@ use Amp\Http\Server\Request;
 use Amp\Http\Server\RequestHandler;
 use Amp\Promise;
 
+use function array_shift;
+
 final class MiddlewareRequestHandler implements RequestHandler
 {
     private RequestHandler $requestHandler;
