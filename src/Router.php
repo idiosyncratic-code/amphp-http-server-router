@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Idiosyncratic\Amp\Http\Server\Router;
 
+use Amp\Http\Server\Middleware;
 use Amp\Http\Server\Request;
 use Amp\Http\Server\RequestHandler;
 use Amp\Http\Server\Response;
@@ -15,6 +16,8 @@ use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use Psr\Container\ContainerInterface;
 
+use function array_map;
+use function count;
 use function FastRoute\simpleDispatcher;
 use function implode;
 use function is_string;
@@ -33,7 +36,7 @@ final class Router implements RequestHandler
     private bool $compiled = false;
 
     public function __construct(
-        ContainerInterface $container
+        ContainerInterface $container,
     ) {
         $this->container = $container;
     }
@@ -41,7 +44,8 @@ final class Router implements RequestHandler
     public function map(
         string $method,
         string $uri,
-        string | RequestHandler $requestHandler
+        string | RequestHandler $requestHandler,
+        string | Middleware ...$middlewares
     ) : void {
         if ($this->compiled === true) {
             throw new Error('Routes already compiled');
@@ -53,7 +57,7 @@ final class Router implements RequestHandler
             );
         }
 
-        $this->routes[] = [$method, ltrim($uri, '/'), $requestHandler];
+        $this->routes[] = [$method, ltrim($uri, '/'), ['handler' => $requestHandler, 'middleware' => $middlewares]];
     }
 
     public function handleRequest(Request $request) : Promise
@@ -61,39 +65,53 @@ final class Router implements RequestHandler
         $method = $request->getMethod();
 
         $path = $request->getUri()->getPath();
-        //$path = rawurldecode($request->getUri()->getPath());
 
         $dispatched = $this->dispatcher->dispatch($method, $path);
 
-        // Ignore the next line because phpcs thinks the parentheses are "superfluous"
+        // Ignore the next line because phpcs currently thinks the parentheses are "superfluous"
         // phpcs:ignore
         return match ($dispatched[0]) {
-            Dispatcher::FOUND => $this->makeFoundResponse($request, $dispatched[1], $dispatched[2]),
-            Dispatcher::METHOD_NOT_ALLOWED => $this->makeMethodNotAllowedResponse($request, $dispatched[1]),
-        default => $this->makeNotFoundResponse($request),
+            Dispatcher::FOUND => $this->makeFoundResponse(
+                $request,
+                $dispatched[1]['handler'],
+                $dispatched[1]['middleware'],
+                $dispatched[2],
+            ),
+            Dispatcher::METHOD_NOT_ALLOWED => $this->makeMethodNotAllowedResponse(
+                $request,
+                $dispatched[1],
+            ),
+            // phpcs:ignore
+            default => $this->makeNotFoundResponse($request),
         };
     }
 
     /**
-     * @param array<mixed> $routeArgs
+     * @param array<string | Middleware> $middleware
+     * @param array<mixed>               $routeArgs
      *
      * @return Promise<Response>
      */
     private function makeFoundResponse(
         Request $request,
         string | RequestHandler $requestHandler,
+        array $middleware,
         array $routeArgs,
     ) : Promise {
-
         if (is_string($requestHandler)) {
             return $this->makeFoundResponse(
                 $request,
                 $this->container->get($requestHandler),
-                $routeArgs
+                $middleware,
+                $routeArgs,
             );
         }
 
         $request->setAttribute(self::class, $routeArgs);
+
+        if (count($middleware) > 0) {
+            return $this->makeMiddlewareRequestHandler($requestHandler, $middleware)->handleRequest($request);
+        }
 
         return $requestHandler->handleRequest($request);
     }
@@ -101,9 +119,8 @@ final class Router implements RequestHandler
     /**
      * @return Promise<Response>
      */
-    private function makeNotFoundResponse(
-        Request $request
-    ) : Promise {
+    private function makeNotFoundResponse(Request $request) : Promise
+    {
         return new Success(new Response(Status::NOT_FOUND));
     }
 
@@ -114,7 +131,7 @@ final class Router implements RequestHandler
      */
     private function makeMethodNotAllowedResponse(
         Request $request,
-        array $methods
+        array $methods,
     ) : Promise {
         $response = new Response(Status::METHOD_NOT_ALLOWED);
 
@@ -134,5 +151,21 @@ final class Router implements RequestHandler
         });
 
         $this->compiled = true;
+    }
+
+    /**
+     * @param array<string | Middleware> $middleware
+     */
+    private function makeMiddlewareRequestHandler(
+        RequestHandler $requestHandler,
+        array $middleware,
+    ) : RequestHandler {
+        $middleware = array_map(function ($item) {
+            return $item instanceof Middleware ?
+                $item :
+                $this->container->get($item);
+        }, $middleware);
+
+        return new MiddlewareRequestHandler($requestHandler, ...$middleware);
     }
 }

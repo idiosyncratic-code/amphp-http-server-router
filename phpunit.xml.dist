@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd"
   backupGlobals="false"
   backupStaticAttributes="false"
   bootstrap="vendor/autoload.php"
@@ -12,12 +12,12 @@
   processIsolation="true"
   stopOnFailure="false"
   verbose="true"
-  xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd"
+  testdox="true"
   >
 
   <coverage processUncoveredFiles="true">
     <include>
-      <directory suffix=".php">./src</directory>
+      <directory suffix=".php">src</directory>
     </include>
     <report>
       <html outputDirectory="build/phpunit/coverage-html" lowUpperBound="50" highLowerBound="90"/>
@@ -26,7 +26,7 @@
 
   <testsuites>
     <testsuite name="default">
-      <directory suffix="Test.php">./test</directory>
+      <directory suffix="Test.php">test</directory>
     </testsuite>
   </testsuites>
 </phpunit>
