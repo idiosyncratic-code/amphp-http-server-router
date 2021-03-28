@@ -38,14 +38,14 @@ final class FastRouteDispatcher implements Dispatcher
     {
         $dispatched = $this->dispatcher->dispatch($method, $path);
 
-        if ($dispatched[0] === FastRoute::METHOD_NOT_ALLOWED) {
+        if ($dispatched[0] === Dispatcher::METHOD_NOT_ALLOWED) {
             return [
                 'status' => $dispatched[0],
                 'allowedMethods' => $dispatched[1],
             ];
         }
 
-        if ($dispatched[0] === FastRoute::NOT_FOUND) {
+        if ($dispatched[0] === Dispatcher::NOT_FOUND) {
             return [
                 'status' => $dispatched[0],
             ];
@@ -60,7 +60,7 @@ final class FastRouteDispatcher implements Dispatcher
         }
 
         return [
-            'status' => FastRoute::FOUND,
+            'status' => Dispatcher::FOUND,
             'handler' => $requestHandler,
             'routeArgs' => $dispatched[2],
         ];
@@ -71,7 +71,7 @@ final class FastRouteDispatcher implements Dispatcher
      */
     public function compile(array $routes) : void
     {
-        if ($this->compiled === true) {
+        if ($this->compiled() === true) {
             throw new Error('Routes already compiled');
         }
 

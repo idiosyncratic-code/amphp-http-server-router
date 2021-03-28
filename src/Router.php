@@ -56,12 +56,12 @@ final class Router implements RequestHandler
         // Ignore the next line because phpcs currently thinks the parentheses are "superfluous"
         // phpcs:ignore
         return match ($dispatched['status']) {
-            FastRoute::FOUND => $this->makeFoundResponse(
+            Dispatcher::FOUND => $this->makeFoundResponse(
                 $request,
                 $dispatched['handler'],
                 $dispatched['routeArgs'],
             ),
-            FastRoute::METHOD_NOT_ALLOWED => $this->makeMethodNotAllowedResponse(
+            Dispatcher::METHOD_NOT_ALLOWED => $this->makeMethodNotAllowedResponse(
                 $request,
                 $dispatched['allowedMethods'],
             ),
