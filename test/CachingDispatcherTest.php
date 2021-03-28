@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace Idiosyncratic\Amp\Http\Server\Router;
 
 use Amp\Http\Server\RequestHandler;
-use Amp\Http\Server\RequestHandler\CallableRequestHandler;
-use Amp\Http\Server\Response;
-use Amp\Http\Status;
 use PHPUnit\Framework\TestCase;
 
 class CachingDispatcherTest extends TestCase

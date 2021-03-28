@@ -64,22 +64,6 @@ final class Router implements RequestHandler
         } catch (NotFound $t) {
             return $this->makeNotFoundResponse($request);
         }
-
-        // Ignore the next line because phpcs currently thinks the parentheses are "superfluous"
-        // phpcs:ignore
-        return match ($dispatched['status']) {
-            Dispatcher::FOUND => $this->makeFoundResponse(
-                $request,
-                $dispatched['handler'],
-                $dispatched['routeArgs'],
-            ),
-            Dispatcher::METHOD_NOT_ALLOWED => $this->makeMethodNotAllowedResponse(
-                $request,
-                $dispatched['allowedMethods'],
-            ),
-            // phpcs:ignore
-            default => $this->makeNotFoundResponse($request),
-        };
     }
 
     public function compileRoutes() : void

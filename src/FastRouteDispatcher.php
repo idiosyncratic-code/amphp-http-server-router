@@ -32,18 +32,15 @@ final class FastRouteDispatcher implements Dispatcher
         $this->container = $container;
     }
 
-    /**
-     * @inheritdoc
-     */
     public function dispatch(string $method, string $path) : DispatchResult
     {
         $dispatched = $this->dispatcher->dispatch($method, $path);
 
-        if ($dispatched[0] === Dispatcher::METHOD_NOT_ALLOWED) {
+        if ($dispatched[0] === FastRoute::METHOD_NOT_ALLOWED) {
             throw new MethodNotAllowed($dispatched[1]);
         }
 
-        if ($dispatched[0] === Dispatcher::NOT_FOUND) {
+        if ($dispatched[0] === FastRoute::NOT_FOUND) {
             throw new NotFound();
         }
 
