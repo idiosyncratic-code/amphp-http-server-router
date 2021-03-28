@@ -91,15 +91,15 @@ class RouterTest extends TestCase
             new CallableRequestHandler(static function () {
                 return new Response(Status::OK, ['content-type' => 'text/plain'], 'Hello, world!');
             }),
-            new CallableMiddleware(function ($request, $next) {
+            new CallableMiddleware(static function ($request, $next) {
                 $response = yield $next->handleRequest($request);
-                $response->setHeader("x-foo-header", 'bar');
+                $response->setHeader('x-foo-header', 'bar');
 
                 return $response;
             }),
-            new CallableMiddleware(function ($request, $next) {
+            new CallableMiddleware(static function ($request, $next) {
                 $response = yield $next->handleRequest($request);
-                $response->setHeader("x-bar-header", 'foo');
+                $response->setHeader('x-bar-header', 'foo');
 
                 return $response;
             }),
