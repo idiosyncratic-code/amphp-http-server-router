@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Idiosyncratic\Amp\Http\Server\Router;
+namespace Idiosyncratic\AmpRoute;
 
 use Amp\Http\Server\RequestHandler;
 use PHPUnit\Framework\TestCase;

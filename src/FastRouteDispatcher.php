@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Idiosyncratic\Amp\Http\Server\Router;
+namespace Idiosyncratic\AmpRoute;
 
 use Amp\Http\Server\HttpServer;
 use Amp\Http\Server\Middleware;
@@ -12,8 +12,8 @@ use Amp\Success;
 use Error;
 use FastRoute\Dispatcher as FastRoute;
 use FastRoute\RouteCollector;
-use Idiosyncratic\Amp\Http\Server\Router\Exception\MethodNotAllowed;
-use Idiosyncratic\Amp\Http\Server\Router\Exception\NotFound;
+use Idiosyncratic\AmpRoute\Exception\MethodNotAllowed;
+use Idiosyncratic\AmpRoute\Exception\NotFound;
 use Psr\Container\ContainerInterface;
 
 use function array_map;

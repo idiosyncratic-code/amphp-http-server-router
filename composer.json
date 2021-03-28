@@ -1,7 +1,14 @@
 {
-  "name": "idiosyncratic/amp-http-server-router",
-  "description": "Router for Amp HTTP Server",
-  "type": "application",
+  "name": "idiosyncratic/amproute",
+  "description": "A flexible HTTP Router for Amp's HTTP Server",
+  "keywords": [
+      "http",
+      "router",
+      "server",
+      "amp",
+      "amphp"
+  ],
+  "type": "library",
   "license": "ISC",
   "authors": [
     {
@@ -11,12 +18,12 @@
   ],
   "autoload": {
     "psr-4": {
-      "Idiosyncratic\\Amp\\Http\\Server\\Router\\": "src"
+      "Idiosyncratic\\AmpRoute\\": "src"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Idiosyncratic\\Amp\\Http\\Server\\Router\\": "test"
+      "Idiosyncratic\\AmpRoute\\": "test"
     }
   },
   "minimum-stability": "dev",
