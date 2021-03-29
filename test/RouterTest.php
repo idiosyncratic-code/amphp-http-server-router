@@ -12,14 +12,18 @@ use Amp\Http\Server\RequestHandler\CallableRequestHandler;
 use Amp\Http\Server\Response;
 use Amp\Http\Status;
 use Amp\Promise;
+use Amp\Success;
 use Error;
+use InvalidArgumentException;
 use League\Uri;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use Psr\Log\Test\TestLogger;
 
 class RouterTest extends TestCase
 {
     use MocksHttpServer;
+    use MocksHttpRequests;
 
     public function testFoundResponseWithCallableRequestHandler() : void
     {
@@ -37,11 +41,7 @@ class RouterTest extends TestCase
 
         Promise\wait($router->onStart($this->mockServer()));
 
-        $request = new Request(
-            $this->createMock(Client::class),
-            'GET',
-            Uri\Http::createFromString('/hello')
-        );
+        $request = $this->mockRequest('GET', '/hello');
 
         $response = Promise\wait($router->handleRequest($request));
 
@@ -56,11 +56,11 @@ class RouterTest extends TestCase
 
         $container->expects($this->once())
              ->method('get')
-             ->will($this->returnValue(new TestResponseHandler()));
+             ->will($this->returnValue(new TestRequestHandler()));
 
         $router = new Router(new FastRouteDispatcher($container));
 
-        $router->map('GET', '/hello/{name}', TestResponseHandler::class);
+        $router->map('GET', '/hello/{name}', TestRequestHandler::class);
 
         Promise\wait($router->onStart($this->mockServer()));
 
@@ -221,10 +221,53 @@ class RouterTest extends TestCase
 
         $router = new Router(new FastRouteDispatcher($container));
 
-        $this->expectException(Error::class);
+        $this->expectException(InvalidArgumentException::class);
 
         $router->map('', '/hello', new CallableRequestHandler(static function () {
             return new Response(Status::OK, ['content-type' => 'text/plain'], 'Hello, world!');
         }));
+    }
+
+    public function testStartAndStopRouter() : void
+    {
+        $dispatcher = $this->createMock(Dispatcher::class);
+
+        $dispatcher->method('onStart')
+             ->will($this->returnValue(new Success()));
+
+        $dispatcher->method('onStop')
+             ->will($this->returnValue(new Success()));
+
+        $router = new Router($dispatcher);
+
+        $logger = new TestLogger();
+
+        $mockServer = $this->mockServer($logger);
+
+        Promise\wait($router->onStart($mockServer));
+
+        $this->assertTrue($logger->hasRecordThatContains('Starting Router', 'debug'));
+
+        Promise\wait($router->onStop($mockServer));
+
+        $this->assertTrue($logger->hasRecordThatContains('Stopping Router', 'debug'));
+    }
+
+    public function testDoubleStartFails() : void
+    {
+        $dispatcher = $this->createMock(Dispatcher::class);
+
+        $dispatcher->method('onStart')
+             ->will($this->returnValue(new Success()));
+
+        $router = new Router($dispatcher);
+
+        $mockServer = $this->mockServer();
+
+        Promise\wait($router->onStart($mockServer));
+
+        $this->expectException(Error::class);
+
+        Promise\wait($router->onStart($mockServer));
     }
 }

@@ -16,10 +16,10 @@ class FastRouteDispatcherTest extends TestCase
 
         $dispatcher = new FastRouteDispatcher($container);
 
-        $dispatcher->compile([]);
+        $dispatcher->compile(new RouteCollection());
 
         $this->expectException(Error::class);
 
-        $dispatcher->compile([]);
+        $dispatcher->compile(new RouteCollection());
     }
 }

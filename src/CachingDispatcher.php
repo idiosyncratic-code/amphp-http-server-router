@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Idiosyncratic\AmpRoute;
 
 use Amp\Http\Server\HttpServer;
+use Amp\Http\Server\Request;
 use Amp\Promise;
 
 use function array_shift;
@@ -16,9 +17,11 @@ final class CachingDispatcher implements Dispatcher
     private Dispatcher $dispatcher;
 
     /** @var array<mixed> */
-    private array $cache;
+    private array $cache = [];
 
     private int $cacheSize;
+
+    private HttpServer $server;
 
     public function __construct(Dispatcher $dispatcher, int $cacheSize = 512)
     {
@@ -27,23 +30,25 @@ final class CachingDispatcher implements Dispatcher
         $this->cacheSize = $cacheSize;
     }
 
-    public function dispatch(string $method, string $path) : DispatchResult
+    public function dispatch(Request $request) : DispatchResult
     {
-        $key = sprintf('%s--%s', $method, $path);
+        $key = sprintf('%s--%s', $request->getMethod(), $request->getUri()->getPath());
 
         if ($this->has($key)) {
             return $this->get($key);
         }
 
-        return $this->put($key, $this->dispatcher->dispatch($method, $path));
+        return $this->put($key, $this->dispatcher->dispatch($request));
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function compile(array $routes) : void
+    public function compile(RouteCollection $routes) : void
     {
         $this->dispatcher->compile($routes);
+    }
+
+    public function mapRoutes(RouteCollection $routes) : void
+    {
+        $this->dispatcher->mapRoutes($routes);
     }
 
     public function compiled() : bool
@@ -56,6 +61,8 @@ final class CachingDispatcher implements Dispatcher
      */
     public function onStart(HttpServer $server) : Promise
     {
+        $this->server = $server;
+
         return $this->dispatcher->onStart($server);
     }
 
@@ -64,6 +71,10 @@ final class CachingDispatcher implements Dispatcher
      */
     public function onStop(HttpServer $server) : Promise
     {
+        unset($this->server);
+
+        $this->cache = [];
+
         return $this->dispatcher->onStop($server);
     }
 

@@ -17,49 +17,52 @@ use Amp\Success;
 use Error;
 use Idiosyncratic\AmpRoute\Exception\MethodNotAllowed;
 use Idiosyncratic\AmpRoute\Exception\NotFound;
+use Psr\Log\LoggerInterface;
 
 use function implode;
-use function ltrim;
 
 final class Router implements RequestHandler, ServerObserver
 {
     private Dispatcher $dispatcher;
 
-    /** @var array<mixed> */
-    private array $routes = [];
+    private RouteCollection $routes;
 
     private bool $running = false;
 
+    private HttpServer $server;
+
     public function __construct(
         Dispatcher $dispatcher,
+        ?RouteCollection $routes = null
     ) {
         $this->dispatcher = $dispatcher;
+
+        $this->routes = $routes ?? new RouteCollection();
     }
 
     public function map(
         string $method,
-        string $uri,
+        string $path,
         string | RequestHandler $requestHandler,
-        string | Middleware ...$middlewares
+        string | Middleware ...$middleware
     ) : void {
         if ($this->dispatcher->compiled() === true) {
             throw new Error('Routes already compiled');
         }
 
-        if ($method === '') {
-            throw new Error(
-                __METHOD__ . '() requires a non-empty string HTTP method at Argument 1'
-            );
-        }
-
-        $this->routes[] = [$method, ltrim($uri, '/'), ['handler' => $requestHandler, 'middleware' => $middlewares]];
+        $this->routes->addRoute(new Route(
+            $method,
+            $path,
+            $requestHandler,
+            ...$middleware,
+        ));
     }
 
     public function handleRequest(Request $request) : Promise
     {
         try {
             return $this->dispatcher
-                   ->dispatch($request->getMethod(), $request->getUri()->getPath())
+                   ->dispatch($request)
                    ->handleRequest($request);
         } catch (MethodNotAllowed $t) {
             return $this->makeMethodNotAllowedResponse(
@@ -71,9 +74,53 @@ final class Router implements RequestHandler, ServerObserver
         }
     }
 
-    private function compileRoutes() : void
+    /**
+     * @return Promise<mixed>
+     */
+    public function onStart(HttpServer $server): Promise
     {
-        $this->dispatcher->compile($this->routes);
+        if ($this->running) {
+            return new Failure(new Error('Router already started'));
+        }
+
+        $this->server = $server;
+
+        $this->getLogger()->debug('Starting Router');
+
+        $this->running = true;
+
+        $this->dispatcher->mapRoutes($this->routes);
+
+        $promises = [];
+
+        $promises[] = $this->dispatcher->onStart($server);
+
+        /** @phpstan-ignore-next-line */
+        return Promise\all($promises);
+    }
+
+    /**
+     * @return Promise<mixed>
+     */
+    public function onStop(HttpServer $server): Promise
+    {
+        $this->getLogger()->debug('Stopping Router');
+
+        $this->running = false;
+
+        unset($this->server);
+
+        $promises = [];
+
+        $promises[] = $this->dispatcher->onStop($server);
+
+        /** @phpstan-ignore-next-line */
+        return Promise\all($promises);
+    }
+
+    private function getLogger() : LoggerInterface
+    {
+        return $this->server->getLogger();
     }
 
     /**
@@ -100,29 +147,99 @@ final class Router implements RequestHandler, ServerObserver
         return new Success($response);
     }
 
-    /**
-     * @return Promise<mixed>
-     */
-    public function onStart(HttpServer $server): Promise
+    /*
+    public function onStart(Server $server): Promise
     {
         if ($this->running) {
-            return new Failure(new Error('Router already started'));
+            return new Failure(new \Error("Router already started"));
         }
 
-        $this->compileRoutes();
+        if (empty($this->routes)) {
+            return new Failure(new \Error(
+                "Router start failure: no routes registered"
+            ));
+        }
 
         $this->running = true;
 
-        return new Success();
+        $options = $server->getOptions();
+        $allowedMethods = $options->getAllowedMethods();
+        $logger = $server->getLogger();
+
+        $this->routeDispatcher = simpleDispatcher(function (RouteCollector $rc) use ($allowedMethods, $logger) {
+            foreach ($this->routes as list($method, $uri, $requestHandler)) {
+                if (!\in_array($method, $allowedMethods, true)) {
+                    $logger->alert(
+                        "Router URI '$uri' uses method '$method' that is not in the list of allowed methods"
+                    );
+                }
+
+                $requestHandler = Middleware\stack($requestHandler, ...$this->middlewares);
+                $uri = $this->prefix . $uri;
+
+                // Special-case, otherwise we redirect just to the same URI again
+                if ($uri === "/?") {
+                    $uri = "/";
+                }
+
+                if (\substr($uri, -2) === "/?") {
+                    $canonicalUri = \substr($uri, 0, -2);
+                    $redirectUri = \substr($uri, 0, -1);
+
+                    $rc->addRoute($method, $canonicalUri, $requestHandler);
+                    $rc->addRoute($method, $redirectUri, new CallableRequestHandler(static function (Request $request): Response {
+                        $uri = $request->getUri();
+                        $path = \rtrim($uri->getPath(), '/');
+
+                        if ($uri->getQuery() !== "") {
+                            $redirectTo = $path . "?" . $uri->getQuery();
+                        } else {
+                            $redirectTo = $path;
+                        }
+
+                        return new Response(Status::PERMANENT_REDIRECT, [
+                            "location" => $redirectTo,
+                            "content-type" => "text/plain; charset=utf-8",
+                        ], "Canonical resource location: {$path}");
+                    }));
+                } else {
+                    $rc->addRoute($method, $uri, $requestHandler);
+                }
+            }
+        });
+
+        $this->errorHandler = $server->getErrorHandler();
+
+        if ($this->fallback instanceof ServerObserver) {
+            $this->observers->attach($this->fallback);
+        }
+
+        foreach ($this->middlewares as $middleware) {
+            if ($middleware instanceof ServerObserver) {
+                $this->observers->attach($middleware);
+            }
+        }
+
+        $promises = [];
+        foreach ($this->observers as $observer) {
+            $promises[] = $observer->onStart($server);
+        }
+
+        return Promise\all($promises);
     }
 
-    /**
-     * @return Promise<mixed>
-     */
-    public function onStop(HttpServer $server): Promise
+    public function onStop(Server $server): Promise
     {
+        $this->routeDispatcher = null;
         $this->running = false;
 
-        return new Success();
+        $promises = [];
+        foreach ($this->observers as $observer) {
+            $promises[] = $observer->onStop($server);
+        }
+
+        return Promise\all($promises);
     }
+
+     */
 }

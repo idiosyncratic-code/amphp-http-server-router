@@ -6,7 +6,9 @@ namespace Idiosyncratic\AmpRoute;
 
 use Amp\Http\Server\HttpServer;
 use Amp\Http\Server\Middleware;
+use Amp\Http\Server\Request;
 use Amp\Http\Server\RequestHandler;
+use Amp\Http\Server\ServerObserver;
 use Amp\Promise;
 use Amp\Success;
 use Error;
@@ -15,12 +17,13 @@ use FastRoute\RouteCollector;
 use Idiosyncratic\AmpRoute\Exception\MethodNotAllowed;
 use Idiosyncratic\AmpRoute\Exception\NotFound;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
+use SplObjectStorage;
 
 use function array_map;
 use function count;
 use function FastRoute\simpleDispatcher;
 use function is_string;
-use function sprintf;
 
 final class FastRouteDispatcher implements Dispatcher
 {
@@ -30,14 +33,21 @@ final class FastRouteDispatcher implements Dispatcher
 
     private bool $compiled = false;
 
+    private RouteCollection $routes;
+
+    /** @var SplObjectStorage<ServerObserver, null> */
+    private SplObjectStorage $observers;
+
+    private HttpServer $server;
+
     public function __construct(ContainerInterface $container)
     {
         $this->container = $container;
     }
 
-    public function dispatch(string $method, string $path) : DispatchResult
+    public function dispatch(Request $request) : DispatchResult
     {
-        $dispatched = $this->dispatcher->dispatch($method, $path);
+        $dispatched = $this->dispatcher->dispatch($request->getMethod(), $request->getUri()->getPath());
 
         if ($dispatched[0] === FastRoute::METHOD_NOT_ALLOWED) {
             throw new MethodNotAllowed($dispatched[1]);
@@ -47,12 +57,12 @@ final class FastRouteDispatcher implements Dispatcher
             throw new NotFound();
         }
 
-        $requestHandler = is_string($dispatched[1]['handler']) ?
-            $this->container->get($dispatched[1]['handler']) :
-            $dispatched[1]['handler'];
+        $requestHandler = is_string($dispatched[1]->getRequestHandler()) ?
+            $this->container->get($dispatched[1]->getRequestHandler()) :
+            $dispatched[1]->getRequestHandler();
 
-        if (count($dispatched[1]['middleware']) > 0) {
-            $requestHandler = $this->makeMiddlewareRequestHandler($requestHandler, $dispatched[1]['middleware']);
+        if (count($dispatched[1]->getMiddleware()) > 0) {
+            $requestHandler = $this->makeMiddlewareRequestHandler($requestHandler, $dispatched[1]->getMiddleware());
         }
 
         return new DispatchResult(
@@ -61,20 +71,22 @@ final class FastRouteDispatcher implements Dispatcher
         );
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function compile(array $routes) : void
+    public function mapRoutes(RouteCollection $routes) : void
+    {
+        $this->routes = $routes;
+    }
+
+    public function compile(RouteCollection $routes) : void
     {
         if ($this->compiled() === true) {
             throw new Error('Routes already compiled');
         }
 
         $this->dispatcher = simpleDispatcher(static function (RouteCollector $collector) use ($routes) : void {
-            foreach ($routes as [$method, $uri, $requestHandler]) {
-                $uri = sprintf('/%s', $uri);
+            foreach ($routes as $route) {
+                $path = $route->getPath();
 
-                $collector->addRoute($method, $uri, $requestHandler);
+                $collector->addRoute($route->getMethod(), $path, $route);
             }
         });
 
@@ -91,6 +103,10 @@ final class FastRouteDispatcher implements Dispatcher
      */
     public function onStart(HttpServer $server) : Promise
     {
+        $this->server = $server;
+
+        $this->compile($this->routes);
+
         return new Success();
     }
 
@@ -99,7 +115,14 @@ final class FastRouteDispatcher implements Dispatcher
      */
     public function onStop(HttpServer $server) : Promise
     {
+        unset($this->server);
+
         return new Success();
+    }
+
+    private function getLogger() : LoggerInterface
+    {
+        return $this->server->getLogger();
     }
 
     /**

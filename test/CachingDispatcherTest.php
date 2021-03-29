@@ -9,14 +9,18 @@ use PHPUnit\Framework\TestCase;
 
 class CachingDispatcherTest extends TestCase
 {
+    use MocksHttpRequests;
+
     public function testCachesDispatchResults() : void
     {
         $mockDispatcher = $this->createMock(Dispatcher::class);
 
+        $request = $this->mockRequest('GET', '/hello');
+
         $mockDispatcher->expects($this->exactly(1))
              ->method('dispatch')
              ->will($this->returnValueMap([
-                 ['GET', '/hello', new DispatchResult($this->createMock(RequestHandler::class), [])],
+                 [$request, new DispatchResult($this->createMock(RequestHandler::class), [])],
              ]));
 
         $mockDispatcher->expects($this->once())
@@ -28,11 +32,11 @@ class CachingDispatcherTest extends TestCase
 
         $dispatcher = new CachingDispatcher($mockDispatcher);
 
-        $dispatcher->dispatch('GET', '/hello');
+        $dispatcher->dispatch($request);
 
-        $dispatcher->dispatch('GET', '/hello');
+        $dispatcher->dispatch($request);
 
-        $dispatcher->compile([]);
+        $dispatcher->compile(new RouteCollection());
 
         $this->assertTrue($dispatcher->compiled());
     }
@@ -43,11 +47,15 @@ class CachingDispatcherTest extends TestCase
 
         $result = new DispatchResult($this->createMock(RequestHandler::class), []);
 
+        $helloRequest = $this->mockRequest('GET', '/hello');
+
+        $goodbyeRequest = $this->mockRequest('GET', '/goodbye');
+
         $mockDispatcher->expects($this->exactly(4))
              ->method('dispatch')
              ->will($this->returnValueMap([
-                 ['GET', '/hello', $result],
-                 ['GET', '/goodbye', $result],
+                 [$helloRequest, $result],
+                 [$goodbyeRequest, $result],
              ]));
 
         $mockDispatcher->expects($this->once())
@@ -55,18 +63,18 @@ class CachingDispatcherTest extends TestCase
 
         $dispatcher = new CachingDispatcher($mockDispatcher, 1);
 
-        $dispatcher->compile([]);
+        $dispatcher->compile(new RouteCollection());
 
-        $dispatcher->dispatch('GET', '/hello');
+        $dispatcher->dispatch($helloRequest);
 
-        $dispatcher->dispatch('GET', '/hello');
+        $dispatcher->dispatch($helloRequest);
 
-        $dispatcher->dispatch('GET', '/goodbye');
+        $dispatcher->dispatch($goodbyeRequest);
 
-        $dispatcher->dispatch('GET', '/goodbye');
+        $dispatcher->dispatch($goodbyeRequest);
 
-        $dispatcher->dispatch('GET', '/hello');
+        $dispatcher->dispatch($helloRequest);
 
-        $dispatcher->dispatch('GET', '/goodbye');
+        $dispatcher->dispatch($goodbyeRequest);
     }
 }

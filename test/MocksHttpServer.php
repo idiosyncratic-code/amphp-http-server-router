@@ -9,11 +9,14 @@ use Amp\Http\Server\Options;
 use Amp\Http\Server\RequestHandler;
 use Amp\Socket;
 use Psr\Log\LoggerInterface;
+use Psr\Log\Test\TestLogger;
 
 trait MocksHttpServer
 {
-    protected function mockServer(): HttpServer
+    protected function mockServer(?LoggerInterface $logger = null) : HttpServer
     {
+        $logger ??= new TestLogger();
+
         $options = new Options();
 
         $socket = Socket\listen('127.0.0.1:0');
@@ -21,8 +24,8 @@ trait MocksHttpServer
         return new HttpServer(
             [$socket],
             $this->createMock(RequestHandler::class),
-            $this->createMock(LoggerInterface::class),
-            $options
+            $logger,
+            $options,
         );
     }
 }

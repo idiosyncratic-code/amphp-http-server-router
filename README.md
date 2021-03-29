@@ -11,6 +11,7 @@ use Idiosyncratic\AmpRoute\CachingDispatcher;
 use Idiosyncratic\AmpRoute\FastRouteDispatcher;
 use Idiosyncratic\AmpRoute\Router;
 use PsrContainerImplementation;
+use CustomRequestHandler;
 
 $dispatcher = new CachingDispatcher(
     new FastRouteDispatcher(
@@ -20,6 +21,6 @@ $dispatcher = new CachingDispatcher(
 
 $router = new Router($dispatcher);
 
-$router->map('GET', '/hello/{name}', TestResponseHandler::class);
+$router->map('GET', '/hello/{name}', CustomRequestHandler::class);
 
 ```
