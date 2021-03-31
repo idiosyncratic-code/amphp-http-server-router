@@ -33,6 +33,8 @@ final class Route
     ) {
         $this->setMethod($method);
 
+        $path  = sprintf('/%s', ltrim($path, '/'));
+
         $this->path = $path;
 
         $this->requestHandler = $requestHandler;
