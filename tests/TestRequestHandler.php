@@ -11,6 +11,7 @@ use Amp\Http\Status;
 use Amp\Promise;
 
 use function Amp\call;
+use function json_encode;
 
 use const JSON_THROW_ON_ERROR;
 

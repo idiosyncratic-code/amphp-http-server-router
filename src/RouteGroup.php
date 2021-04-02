@@ -25,6 +25,9 @@ final class RouteGroup
     /** @var array<Route> */
     private array $routes = [];
 
+    /** @var array<RouteGroup> */
+    private array $routeGroups = [];
+
     public function __construct(
         string $prefix,
         callable $callback,
@@ -50,6 +53,18 @@ final class RouteGroup
         $this->routes[] = new Route($method, $path, $requestHandler, ...$middleware);
     }
 
+    public function mapGroup(
+        string $prefix,
+        callable $callback,
+        string | Middleware ...$middleware
+    ) : void {
+        $prefix = $prefix === '/' ? $this->prefix : sprintf('%s/%s', $this->prefix, ltrim($prefix, '/'));
+
+        array_unshift($middleware, ...$this->middleware);
+
+        $this->routeGroups[] = new RouteGroup($prefix, $callback, ...$middleware);
+    }
+
     /**
      * @return array<Route>
      */
@@ -57,6 +72,10 @@ final class RouteGroup
     {
         if (count($this->routes) === 0) {
             ($this->callback)($this);
+
+            foreach ($this->routeGroups as $group) {
+                array_push($this->routes, ...$group->getRoutes());
+            }
         }
 
         return $this->routes;

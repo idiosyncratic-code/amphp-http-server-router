@@ -19,7 +19,7 @@ class RouteGroupTest extends TestCase
 
         $routeGroup = new RouteGroup(
             '/hello',
-            static function (RouteGroup $group) use ($handler, $middleware2, $middleware3): void {
+            static function (RouteGroup $group) use ($handler, $middleware2, $middleware3) : void {
                 $group->map(
                     'GET',
                     '/world',
@@ -34,13 +34,32 @@ class RouteGroupTest extends TestCase
                     $middleware2,
                     $middleware3,
                 );
+
+                $group->mapGroup(
+                    '/galaxy',
+                    static function (RouteGroup $group) use ($handler): void {
+                        $group->map(
+                            'GET',
+                            '/milky-way',
+                            $handler,
+                        );
+
+                        $group->map(
+                            'GET',
+                            '/pegasus',
+                            $handler,
+                        );
+                    },
+                    $middleware2,
+                    $middleware3,
+                );
             },
             $middleware1
         );
 
         $routes = $routeGroup->getRoutes();
 
-        $this->assertEquals(2, count($routes));
+        $this->assertEquals(4, count($routes));
 
         $this->assertEquals('/hello/world', $routes[0]->getPath());
 
@@ -49,5 +68,13 @@ class RouteGroupTest extends TestCase
         $this->assertEquals('/hello/universe', $routes[1]->getPath());
 
         $this->assertEquals(3, count($routes[1]->getMiddleware()));
+
+        $this->assertEquals('/hello/galaxy/milky-way', $routes[2]->getPath());
+
+        $this->assertEquals(3, count($routes[2]->getMiddleware()));
+
+        $this->assertEquals('/hello/galaxy/pegasus', $routes[3]->getPath());
+
+        $this->assertEquals(3, count($routes[3]->getMiddleware()));
     }
 }

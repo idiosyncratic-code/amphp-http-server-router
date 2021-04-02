@@ -12,6 +12,7 @@ use InvalidArgumentException;
 use function array_filter;
 use function array_push;
 use function array_unshift;
+use function ltrim;
 use function sprintf;
 
 final class Route
@@ -33,7 +34,7 @@ final class Route
     ) {
         $this->setMethod($method);
 
-        $path  = sprintf('/%s', ltrim($path, '/'));
+        $path = sprintf('/%s', ltrim($path, '/'));
 
         $this->path = $path;
 
