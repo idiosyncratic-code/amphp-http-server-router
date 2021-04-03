@@ -4,34 +4,20 @@ declare(strict_types=1);
 
 namespace Idiosyncratic\AmpRoute;
 
-use Amp\Http\Server\HttpServer;
-use Amp\Http\Server\Middleware;
 use Amp\Http\Server\Request;
-use Amp\Http\Server\RequestHandler;
-use Amp\Http\Server\ServerObserver;
-use Amp\Promise;
-use Amp\Success;
-use Error;
 use FastRoute\Dispatcher as FastRoute;
 use FastRoute\RouteCollector;
 use Idiosyncratic\AmpRoute\Exception\MethodNotAllowed;
 use Idiosyncratic\AmpRoute\Exception\NotFound;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 
-use function array_map;
-use function count;
 use function FastRoute\simpleDispatcher;
-use function is_string;
 
 final class FastRouteDispatcher implements Dispatcher
 {
     private ContainerInterface $container;
 
     private FastRoute $dispatcher;
-
-    /** @var array<Route> */
-    private array $routes;
 
     public function __construct(ContainerInterface $container)
     {

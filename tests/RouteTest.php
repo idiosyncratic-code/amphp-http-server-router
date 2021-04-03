@@ -83,7 +83,7 @@ class RouteTest extends TestCase
         $container->expects($this->exactly(1))
              ->method('get')
              ->will($this->returnValueMap([
-                 [TestRequestHandler::class, new TestRequestHandler()]
+                 [TestRequestHandler::class, new TestRequestHandler()],
              ]));
 
         $route = new Route(
@@ -104,7 +104,7 @@ class RouteTest extends TestCase
         $container->expects($this->exactly(1))
              ->method('get')
              ->will($this->returnValueMap([
-                 [TestMiddleware::class, new TestMiddleware()]
+                 [TestMiddleware::class, new TestMiddleware()],
              ]));
 
         $route = new Route(

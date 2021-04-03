@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Idiosyncratic\AmpRoute;
 
-use Amp\Http\Server\Middleware;
-use Amp\Http\Server\RequestHandler;
-use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 
@@ -80,5 +77,4 @@ class FastRouteDispatcherTest extends TestCase
 
         $dispatcher->dispatch($request);
     }
-
 }

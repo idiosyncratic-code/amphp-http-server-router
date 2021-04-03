@@ -6,9 +6,9 @@ namespace Idiosyncratic\AmpRoute\Exception;
 
 use PHPUnit\Framework\TestCase;
 
-class ExceptionTest extends TestCase
+class HttpExceptionTest extends TestCase
 {
-    public function testNotFoundException() :void
+    public function testNotFoundException() : void
     {
         $exception = new NotFound();
 
@@ -17,7 +17,7 @@ class ExceptionTest extends TestCase
         $this->assertEquals('Not Found', $exception->getHttpStatusReason());
     }
 
-    public function testMethoNotAllowedException() :void
+    public function testMethodNotAllowedException() : void
     {
         $exception = new MethodNotAllowed(['GET', 'POST']);
 
@@ -28,7 +28,7 @@ class ExceptionTest extends TestCase
         $this->assertEquals(['GET', 'POST'], $exception->getAllowedMethods());
     }
 
-    public function testInternalServerErrorException() :void
+    public function testInternalServerErrorException() : void
     {
         $exception = new InternalServerError();
 

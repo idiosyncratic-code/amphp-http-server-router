@@ -6,15 +6,15 @@ namespace Idiosyncratic\AmpRoute;
 
 use Amp\Failure;
 use Amp\Http\Server\HttpServer;
-use Amp\Http\Server\Middleware;
 use Amp\Http\Server\Request;
 use Amp\Http\Server\RequestHandler;
 use Amp\Http\Server\ServerObserver;
 use Amp\Promise;
-use Amp\Success;
 use Error;
 use Psr\Log\LoggerInterface;
 use SplObjectStorage;
+
+use function array_walk;
 
 final class Router implements RequestHandler, ServerObserver
 {

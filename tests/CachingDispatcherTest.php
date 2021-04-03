@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace Idiosyncratic\AmpRoute;
 
 use Amp\Http\Server\RequestHandler;
-use Amp\Success;
 use PHPUnit\Framework\TestCase;
 
 class CachingDispatcherTest extends TestCase
 {
     use MocksHttpRequests;
-
     use MocksHttpServer;
 
     public function testCachesRouteHandlers() : void

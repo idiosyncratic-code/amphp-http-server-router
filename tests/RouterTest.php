@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Idiosyncratic\AmpRoute;
 
-use Amp\Http\Server\RequestHandler;
 use Amp\Http\Server\Response;
 use Amp\Promise;
 use Amp\Success;
@@ -14,7 +13,6 @@ use PHPUnit\Framework\TestCase;
 class RouterTest extends TestCase
 {
     use MocksHttpRequests;
-
     use MocksHttpServer;
 
     public function testStartAndStop() : void
@@ -28,7 +26,6 @@ class RouterTest extends TestCase
         $mockDispatcher->expects($this->exactly(1))
              ->method('onStop')
              ->will($this->returnValue(new Success()));
-
 
         $handler = new TestRequestHandlerObserver();
 
