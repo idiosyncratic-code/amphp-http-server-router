@@ -8,9 +8,8 @@ use Amp\Http\Server\Middleware;
 use Amp\Http\Server\RequestHandler;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 
-use function array_pop;
-use function array_shift;
 use function count;
 
 class RouteTest extends TestCase
@@ -30,8 +29,11 @@ class RouteTest extends TestCase
     public function testGetServerObservers() : void
     {
         $handler = new TestRequestHandlerObserver();
+
         $middleware1 = new TestMiddleware('x-foo', 'bar');
+
         $middleware2 = new TestMiddleware('x-bar', 'baz');
+
         $middleware3 = new TestMiddlewareObserver('x-baz', 'foo');
 
         $route = new Route(
@@ -44,65 +46,95 @@ class RouteTest extends TestCase
         );
 
         $this->assertEquals(2, count($route->getServerObservers()));
+
+        $this->assertEquals('GET', $route->getMethod());
     }
 
-    public function testAppendMiddleware() : void
+    public function testResolveRequestHandler() : void
     {
+        $container = $this->createMock(ContainerInterface::class);
+
         $handler = new TestRequestHandlerObserver();
+
         $middleware1 = new TestMiddleware('x-foo', 'bar');
+
         $middleware2 = new TestMiddleware('x-bar', 'baz');
+
         $middleware3 = new TestMiddlewareObserver('x-baz', 'foo');
 
-        $route1 = new Route(
+        $route = new Route(
             'GET',
             '/',
             $handler,
             $middleware1,
+            $middleware2,
+            $middleware3,
         );
 
-        $route2 = $route1->appendMiddleware($middleware2, $middleware3);
+        $resolvedHandler = $route->resolveRequestHandler($container);
 
-        $this->assertFalse($route1 === $route2);
-
-        $this->assertEquals(1, count($route1->getMiddleware()));
-
-        $this->assertEquals(3, count($route2->getMiddleware()));
-
-        $this->assertEquals($route1->getPath(), $route2->getPath());
-
-        $this->assertEquals($route1->getMethod(), $route2->getMethod());
-
-        $this->assertEquals($route1->getRequestHandler(), $route2->getRequestHandler());
-
-        $middlewareStack = $route2->getMiddleware();
-
-        $this->assertSame($middleware3, array_pop($middlewareStack));
+        $this->assertInstanceOf(RequestHandler::class, $resolvedHandler);
     }
 
-    public function testPrependMiddleware() : void
+    public function testResolveRequestHandlerDependencyUsingContainer() : void
     {
-        $handler = new TestRequestHandlerObserver();
-        $middleware1 = new TestMiddleware('x-foo', 'bar');
-        $middleware2 = new TestMiddleware('x-bar', 'baz');
-        $middleware3 = new TestMiddlewareObserver('x-baz', 'foo');
+        $container = $this->createMock(ContainerInterface::class);
 
-        $route1 = new Route(
+        $container->expects($this->exactly(1))
+             ->method('get')
+             ->will($this->returnValueMap([
+                 [TestRequestHandler::class, new TestRequestHandler()]
+             ]));
+
+        $route = new Route(
             'GET',
             '/',
-            $handler,
-            $middleware1,
+            TestRequestHandler::class,
         );
 
-        $route2 = $route1->prependMiddleware($middleware2, $middleware3);
+        $resolvedHandler = $route->resolveRequestHandler($container);
 
-        $this->assertFalse($route1 === $route2);
+        $this->assertInstanceOf(RequestHandler::class, $resolvedHandler);
+    }
 
-        $this->assertEquals(1, count($route1->getMiddleware()));
+    public function testResolveMiddlewareDependencyUsingContainer() : void
+    {
+        $container = $this->createMock(ContainerInterface::class);
 
-        $this->assertEquals(3, count($route2->getMiddleware()));
+        $container->expects($this->exactly(1))
+             ->method('get')
+             ->will($this->returnValueMap([
+                 [TestMiddleware::class, new TestMiddleware()]
+             ]));
 
-        $middlewareStack = $route2->getMiddleware();
+        $route = new Route(
+            'GET',
+            '/',
+            new TestRequestHandler(),
+            TestMiddleware::class,
+        );
 
-        $this->assertSame($middleware2, array_shift($middlewareStack));
+        $resolvedHandler = $route->resolveRequestHandler($container);
+
+        $this->assertInstanceOf(RequestHandler::class, $resolvedHandler);
+    }
+
+    public function testResolveDependenciesUsingContainerFails() : void
+    {
+        $container = $this->createMock(ContainerInterface::class);
+
+        $container->expects($this->exactly(1))
+             ->method('get')
+              ->will($this->throwException(new ContainerEntryNotFound()));
+
+        $route = new Route(
+            'GET',
+            '/',
+            TestRequestHandler::class,
+        );
+
+        $this->expectException(Exception\InternalServerError::class);
+
+        $route->resolveRequestHandler($container);
     }
 }

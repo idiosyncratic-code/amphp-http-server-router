@@ -22,6 +22,16 @@ class MethodNotAllowed extends RuntimeException implements HttpException
         parent::__construct($message, $code, $previous);
     }
 
+    public function getHttpStatusCode() : int
+    {
+        return 405;
+    }
+
+    public function getHttpStatusReason() : string
+    {
+        return 'Method Not Allowed';
+    }
+
     /**
      * @return array<string>
      */

@@ -7,11 +7,15 @@ namespace Idiosyncratic\AmpRoute;
 use Amp\Http\Server\Middleware;
 use Amp\Http\Server\RequestHandler;
 use Amp\Http\Server\ServerObserver;
+use Idiosyncratic\AmpRoute\Exception\InternalServerError;
 use InvalidArgumentException;
+use Psr\Container\ContainerInterface;
+use Throwable;
 
 use function array_filter;
-use function array_push;
-use function array_unshift;
+use function array_map;
+use function count;
+use function is_string;
 use function ltrim;
 use function sprintf;
 
@@ -64,35 +68,29 @@ final class Route
         return $this->path;
     }
 
-    public function getRequestHandler() : string | RequestHandler
+    public function resolveRequestHandler(ContainerInterface $container) : RequestHandler
     {
-        return $this->requestHandler;
-    }
+        try {
+            if (is_string($this->requestHandler)) {
+                $requestHandler = $container->get($this->requestHandler);
+            } else {
+                $requestHandler = $this->requestHandler;
+            }
 
-    /**
-     * @return array<string | Middleware>
-     */
-    public function getMiddleware() : array
-    {
-        return $this->middleware;
-    }
+            if (count($this->middleware) === 0) {
+                return $requestHandler;
+            }
 
-    public function prependMiddleware(Middleware ...$middleware) : self
-    {
-        $route = clone $this;
+            $middleware = array_map(static function ($item) use ($container) {
+                return $item instanceof Middleware ?
+                    $item :
+                    $container->get($item);
+            }, $this->middleware);
 
-        array_unshift($route->middleware, ...$middleware);
-
-        return $route;
-    }
-
-    public function appendMiddleware(Middleware ...$middleware) : self
-    {
-        $route = clone $this;
-
-        array_push($route->middleware, ...$middleware);
-
-        return $route;
+            return new MiddlewareRequestHandler($requestHandler, ...$middleware);
+        } catch (Throwable $t) {
+            throw new InternalServerError(previous: $t);
+        }
     }
 
     /**

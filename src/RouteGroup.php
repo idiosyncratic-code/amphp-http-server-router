@@ -7,6 +7,7 @@ namespace Idiosyncratic\AmpRoute;
 use Amp\Http\Server\Middleware;
 use Amp\Http\Server\RequestHandler;
 
+use function array_push;
 use function array_unshift;
 use function count;
 use function ltrim;

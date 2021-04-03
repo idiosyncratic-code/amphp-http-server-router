@@ -63,18 +63,10 @@ class RouteGroupTest extends TestCase
 
         $this->assertEquals('/hello/world', $routes[0]->getPath());
 
-        $this->assertEquals(2, count($routes[0]->getMiddleware()));
-
         $this->assertEquals('/hello/universe', $routes[1]->getPath());
-
-        $this->assertEquals(3, count($routes[1]->getMiddleware()));
 
         $this->assertEquals('/hello/galaxy/milky-way', $routes[2]->getPath());
 
-        $this->assertEquals(3, count($routes[2]->getMiddleware()));
-
         $this->assertEquals('/hello/galaxy/pegasus', $routes[3]->getPath());
-
-        $this->assertEquals(3, count($routes[3]->getMiddleware()));
     }
 }

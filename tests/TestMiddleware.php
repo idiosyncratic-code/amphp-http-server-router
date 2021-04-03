@@ -18,7 +18,7 @@ class TestMiddleware implements Middleware
 
     private string $value;
 
-    public function __construct(string $header, string $value)
+    public function __construct(string $header = 'x-test-middleware', string $value = 'registered')
     {
         $this->header = $header;
 
