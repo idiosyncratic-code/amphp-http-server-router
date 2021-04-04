@@ -41,7 +41,7 @@
     "amphp/http-server": "^2.1",
     "league/uri": "^6.4",
     "nikic/fast-route": "^1.3",
-    "psr/container": "^2.0",
+    "psr/container": "^2.0 || ~1.0",
     "psr/log": "^1.1"
   },
   "require-dev": {
