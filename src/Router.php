@@ -11,6 +11,7 @@ use Amp\Http\Server\RequestHandler;
 use Amp\Http\Server\ServerObserver;
 use Amp\Promise;
 use Error;
+use Idiosyncratic\AmpRoute\Exception\NotFound;
 use Psr\Log\LoggerInterface;
 use SplObjectStorage;
 
@@ -22,6 +23,8 @@ final class Router implements RequestHandler, ServerObserver
 
     private RouteGroup $routes;
 
+    private ?RequestHandler $defaultHandler;
+
     /** @var SplObjectStorage<ServerObserver, null> */
     private SplObjectStorage $observers;
 
@@ -32,18 +35,29 @@ final class Router implements RequestHandler, ServerObserver
     public function __construct(
         Dispatcher $dispatcher,
         RouteGroup $routes,
+        ?RequestHandler $defaultHandler = null,
     ) {
         $this->dispatcher = $dispatcher;
 
         $this->routes = $routes;
 
         $this->observers = new SplObjectStorage();
+
+        $this->defaultHandler = $defaultHandler;
     }
 
     public function handleRequest(Request $request) : Promise
     {
-        return $this->dispatcher->dispatch($request)
-               ->handleRequest($request);
+        try {
+            return $this->dispatcher->dispatch($request)
+                   ->handleRequest($request);
+        } catch (NotFound $t) {
+            if ($this->defaultHandler instanceof RequestHandler) {
+                return $this->defaultHandler->handleRequest($request);
+            }
+
+            throw $t;
+        }
     }
 
     /**

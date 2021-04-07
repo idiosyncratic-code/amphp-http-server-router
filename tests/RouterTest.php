@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Idiosyncratic\AmpRoute;
 
+use Amp\Http\Server\RequestHandler;
 use Amp\Http\Server\Response;
 use Amp\Promise;
 use Amp\Success;
 use Error;
+use Idiosyncratic\AmpRoute\Exception\NotFound;
 use PHPUnit\Framework\TestCase;
 
 class RouterTest extends TestCase
@@ -123,6 +125,66 @@ class RouterTest extends TestCase
         $server = $this->mockHttpServer();
 
         $router = new Router($mockDispatcher, $routeGroup);
+
+        $router->onStart($server);
+
+        $response = Promise\wait($router->handleRequest($request));
+
+        $this->assertInstanceOf(Response::class, $response);
+    }
+
+    public function testThrowsNotFoundExceptionWithNoDefaultHandler() : void
+    {
+        $handler = new TestRequestHandlerObserver();
+
+        $mockDispatcher = $this->createMock(TestServerObserverDispatcher::class);
+
+        $result = new RouteHandler($handler, []);
+
+        $request = $this->mockRequest('GET', '/hello/world');
+
+        $mockDispatcher->expects($this->exactly(1))
+             ->method('dispatch')
+             ->will($this->throwException(new NotFound()));
+
+        $routeGroup = new RouteGroup(
+            '/hello',
+            static function (RouteGroup $group) use ($handler) : void {},
+        );
+
+        $server = $this->mockHttpServer();
+
+        $router = new Router($mockDispatcher, $routeGroup);
+
+        $router->onStart($server);
+
+        $this->expectException(NotFound::class);
+
+        $router->handleRequest($request);
+    }
+
+    public function testReturnsResponseFromDefaultHandler() : void
+    {
+        $handler = new TestRequestHandlerObserver();
+
+        $mockDispatcher = $this->createMock(TestServerObserverDispatcher::class);
+
+        $result = new RouteHandler($handler, []);
+
+        $request = $this->mockRequest('GET', '/hello/world');
+
+        $mockDispatcher->expects($this->exactly(1))
+             ->method('dispatch')
+             ->will($this->throwException(new NotFound()));
+
+        $routeGroup = new RouteGroup(
+            '/hello',
+            static function (RouteGroup $group) : void {},
+        );
+
+        $server = $this->mockHttpServer();
+
+        $router = new Router($mockDispatcher, $routeGroup, $handler);
 
         $router->onStart($server);
 
