@@ -13,20 +13,18 @@ use Amp\Promise;
 use Error;
 use Idiosyncratic\AmpRoute\Exception\NotFound;
 use Psr\Log\LoggerInterface;
-use SplObjectStorage;
 
 use function array_walk;
 
 final class Router implements RequestHandler, ServerObserver
 {
+    use HasServerObservers;
+
     private Dispatcher $dispatcher;
 
     private RouteGroup $routes;
 
     private ?RequestHandler $defaultHandler;
-
-    /** @var SplObjectStorage<ServerObserver, null> */
-    private SplObjectStorage $observers;
 
     private HttpServer $server;
 
@@ -41,9 +39,9 @@ final class Router implements RequestHandler, ServerObserver
 
         $this->routes = $routes;
 
-        $this->observers = new SplObjectStorage();
-
         $this->defaultHandler = $defaultHandler;
+
+        $this->setupObservers();
     }
 
     public function handleRequest(Request $request) : Promise
@@ -83,23 +81,16 @@ final class Router implements RequestHandler, ServerObserver
             $routes,
             function ($route) : void {
                 foreach ($route->getServerObservers() as $observer) {
-                    $this->observers->attach($observer);
+                    $this->addObserver($observer);
                 }
             },
         );
 
         if ($this->dispatcher instanceof ServerObserver) {
-            $this->observers->attach($this->dispatcher);
+            $this->addObserver($this->dispatcher);
         }
 
-        $promises = [];
-
-        foreach ($this->observers as $observer) {
-            $promises[] = $observer->onStart($server);
-        }
-
-        /** @phpstan-ignore-next-line */
-        return Promise\all($promises);
+        return $this->startObservers($server);
     }
 
     /**
@@ -109,17 +100,7 @@ final class Router implements RequestHandler, ServerObserver
     {
         $this->running = false;
 
-        $promises = [];
-
-        foreach ($this->observers as $observer) {
-            $promises[] = $observer->onStop($server);
-        }
-
-        /** @phpstan-ignore-next-line */
-        $this->observers->removeAll($this->observers);
-
-        /** @phpstan-ignore-next-line */
-        return Promise\all($promises);
+        return $this->stopObservers($server);
     }
 
     private function getLogger() : LoggerInterface
