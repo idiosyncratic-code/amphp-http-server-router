@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Idiosyncratic\AmpRoute;
 
-use Amp\Http\Server\RequestHandler;
 use Amp\Http\Server\Response;
 use Amp\Promise;
 use Amp\Success;
@@ -149,7 +148,8 @@ class RouterTest extends TestCase
 
         $routeGroup = new RouteGroup(
             '/hello',
-            static function (RouteGroup $group) use ($handler) : void {},
+            static function (RouteGroup $group)  : void {
+            },
         );
 
         $server = $this->mockHttpServer();
@@ -179,7 +179,8 @@ class RouterTest extends TestCase
 
         $routeGroup = new RouteGroup(
             '/hello',
-            static function (RouteGroup $group) : void {},
+            static function (RouteGroup $group) : void {
+            },
         );
 
         $server = $this->mockHttpServer();
